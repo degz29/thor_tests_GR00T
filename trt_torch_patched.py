@@ -53,12 +53,16 @@ class LayerProfiler(trt.IProfiler):
 
 def layer_category(name):
     n = name.lower()
+    if "reformatting" in n or "copynode" in n:
+        return "data movement"
     if any(k in n for k in ("fmha", "mha", "attention", "softmax", "flash")):
         return "attention"
     if any(k in n for k in ("matmul", "gemm", "conv")):
         return "gemm"
     if any(k in n for k in ("norm", "reducemean", "rsqrt")):
         return "norm"
+    if any(k in n for k in ("quantize", "dequant", "qdq", "fp4", "fp8")):
+        return "quantize"
     if "cast" in n:
         return "cast"
     if any(k in n for k in ("reformat", "copy", "shuffle", "transpose", "concat", "slice",
@@ -66,10 +70,7 @@ def layer_category(name):
         return "data movement"
     if "myl" in n:
         return "fused elementwise"
-    if any(k in n for k in ("quantize", "dequant", "qdq", "fp4", "fp8")):
-        return "quantize"
     return "other"
-
 
 def print_profiles():
     for eng in PROFILED:
