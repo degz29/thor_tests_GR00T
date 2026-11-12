@@ -1,0 +1,93 @@
+--- scripts/deployment/trt_torch.py.orig	2026-11-11 16:39:47.041803449 +0100
++++ scripts/deployment/trt_torch.py	2026-11-11 17:04:43.454446755 +0100
+@@ -33,15 +33,60 @@
+ """
+ 
+ import ctypes
++import atexit
+ import os
+ 
+ import tensorrt as trt
+ import torch
+ 
++PROFILED =[]
+ 
+-
+-
+-
++class LayerProfiler(trt.IProfiler):
++    """Adds up TRT's per-layer times (ms) over all runs of one engine."""
++    def __init__(self):
++        trt.IProfiler.__init__(self)
++        self.t = {}
++
++    def report_layer_time(self, layer_name, ms):
++        self.t[layer_name] = self.t.get(layer_name, 0.0) + ms
++
++
++def layer_category(name):
++    n = name.lower()
++    if any(k in n for k in ("fmha", "mha", "attention", "softmax", "flash")):
++        return "attention"
++    if any(k in n for k in ("matmul", "gemm", "conv")):
++        return "gemm"
++    if any(k in n for k in ("norm", "reducemean", "rsqrt")):
++        return "norm"
++    if "cast" in n:
++        return "cast"
++    if any(k in n for k in ("reformat", "copy", "shuffle", "transpose", "concat", "slice",
++                            "gather", "scatter", "reshape")):
++        return "data movement"
++    if "myl" in n:
++        return "fused elementwise"
++    return "other"
++
++
++def print_profiles():
++    for eng in PROFILED:
++        if eng.n_runs == 0:
++            continue
++        per_run = {k: v / eng.n_runs for k, v in eng.prof.t.items()}
++        total = sum(per_run.values())
++        print(f"\n=== {os.path.basename(eng.file)}: {eng.n_runs} runs, "
++              f"{total:.3f} ms per run (profiler on) ===")
++        cats = {}
++        for name, ms in per_run.items():
++            c = layer_category(name)
++            cats[c] = cats.get(c, 0.0) + ms
++        for c, ms in sorted(cats.items(), key=lambda x: -x[1]):
++            print(f"  {c:<20}{ms:8.3f} ms {100 * ms / total:6.1f}%")
++        print("  slowest layers:")
++        for name, ms in sorted(per_run.items(), key=lambda x: -x[1])[:10]:
++            print(f"    {ms:7.3f} ms  [{layer_category(name)}]  {name[:100]}")
++atexit.register(print_profiles)
+ 
+ def torch_type(trt_type):
+     """Convert TensorRT data type to PyTorch equivalent."""
+@@ -132,6 +177,12 @@
+                 )
+ 
+             self.execution_context = self.handle.create_execution_context()
++            self.prof = None
++            if os.getenv("LAYER_PROFILE") == "1":
++                self.prof = LayerProfiler()
++                self.execution_context.profiler = self.prof
++                self.n_runs = 0
++                PROFILED.append(self)
+             self.meta, self.in_meta, self.out_meta = [], [], []
+             for tensor_name in self.handle:
+                 shape = self.handle.get_tensor_shape(tensor_name)
+@@ -218,6 +269,13 @@
+         # Execute
+         self.execution_context.execute_async_v3(stream.cuda_stream)
+         stream.synchronize()
++        
++        
++        #### Profile layers if requested
++        if self.prof is not None:
++            self.n_runs += 1
++        
++        
+         assert len(reference_tensors) == len(self.in_meta) + len(self.out_meta), (
+             f"Invalid input tensors. The expected I/O tensors are "
+             f"{len(self.in_meta) + len(self.out_meta)}, but got {len(reference_tensors)}"

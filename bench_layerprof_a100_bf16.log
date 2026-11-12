@@ -1,0 +1,270 @@
+/data/leuven/392/vsc39232/conda_envs/gr00t_py312/lib/python3.12/site-packages/albumentations/__init__.py:13: UserWarning: A new version of Albumentations is available: 2.0.8 (you have 1.4.18). Upgrade using: pip install -U albumentations. To disable automatic update checks, set the environment variable NO_ALBUMENTATIONS_UPDATE to 1.
+  check_for_updates()
+Flash Attention 2 only supports torch.float16 and torch.bfloat16 dtypes, but the current dype in Qwen3VLForConditionalGeneration is torch.float32. You should run training or inference using Automatic Mixed-Precision via the `with torch.autocast(device_type='torch_device'):` decorator, or load the model with the `dtype` argument. Example: `model = AutoModel.from_pretrained("openai/whisper-tiny", attn_implementation="flash_attention_2", dtype=torch.float16)`
+Flash Attention 2 only supports torch.float16 and torch.bfloat16 dtypes, but the current dype in Qwen3VLModel is torch.float32. You should run training or inference using Automatic Mixed-Precision via the `with torch.autocast(device_type='torch_device'):` decorator, or load the model with the `dtype` argument. Example: `model = AutoModel.from_pretrained("openai/whisper-tiny", attn_implementation="flash_attention_2", dtype=torch.float16)`
+Flash Attention 2 only supports torch.float16 and torch.bfloat16 dtypes, but the current dype in Qwen3VLVisionModel is torch.float32. You should run training or inference using Automatic Mixed-Precision via the `with torch.autocast(device_type='torch_device'):` decorator, or load the model with the `dtype` argument. Example: `model = AutoModel.from_pretrained("openai/whisper-tiny", attn_implementation="flash_attention_2", dtype=torch.float16)`
+Flash Attention 2 only supports torch.float16 and torch.bfloat16 dtypes, but the current dype in Qwen3VLTextModel is torch.float32. You should run training or inference using Automatic Mixed-Precision via the `with torch.autocast(device_type='torch_device'):` decorator, or load the model with the `dtype` argument. Example: `model = AutoModel.from_pretrained("openai/whisper-tiny", attn_implementation="flash_attention_2", dtype=torch.float16)`
+/data/leuven/392/vsc39232/Isaac-GR00T/gr00t/model/modules/dit.py:255: FutureWarning: Accessing config attribute `compute_dtype` directly via 'AlternateVLDiT' object attribute is deprecated. Please access 'compute_dtype' over 'AlternateVLDiT's config object instead, e.g. 'unet.config.compute_dtype'.
+  embedding_dim=self.inner_dim, compute_dtype=self.compute_dtype
+/data/leuven/392/vsc39232/Isaac-GR00T/gr00t/model/modules/dit.py:286: FutureWarning: Accessing config attribute `output_dim` directly via 'AlternateVLDiT' object attribute is deprecated. Please access 'output_dim' over 'AlternateVLDiT's config object instead, e.g. 'unet.config.output_dim'.
+  self.proj_out_2 = nn.Linear(self.inner_dim, self.output_dim)
+====================================================================================================
+GR00T INFERENCE BENCHMARK
+====================================================================================================
+Device: A100 (NVIDIA A100-SXM4-80GB)
+Model: checkpoints/GR00T-N1.7-LIBERO/libero_10
+Dataset: /data/leuven/392/vsc39232/Isaac-GR00T/demo_data/libero_demo
+Iterations: 20
+Warmup: 5
+Use Trajectory: False
+
+Loading policy...
+Total number of DiT parameters:  1091722240
+Total number of SelfAttentionTransformer parameters:  201433088
+Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Loading checkpoint shards:  50%|█████     | 1/2 [00:00<00:00,  1.27it/s]Loading checkpoint shards: 100%|██████████| 2/2 [00:01<00:00,  2.00it/s]Loading checkpoint shards: 100%|██████████| 2/2 [00:01<00:00,  1.84it/s]
+Action Horizon: 40
+Denoising Steps: 4
+
+--------------------------------------------------
+Benchmarking Data Processing (shared across all modes)...
+--------------------------------------------------
+  Data Processing: 3.40 ± 0.31 ms
+
+--------------------------------------------------
+Benchmarking PyTorch Eager...
+--------------------------------------------------
+  E2E:             146 ms (6.8 Hz)
+  Data Processing: 3 ms
+  Backbone:        51 ms
+  Action Head:     92 ms
+
+--------------------------------------------------
+Benchmarking TensorRT (n17_full_pipeline)...
+--------------------------------------------------
+Total number of DiT parameters:  1091722240
+Total number of SelfAttentionTransformer parameters:  201433088
+Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Loading checkpoint shards:  50%|█████     | 1/2 [00:00<00:00,  1.51it/s]Loading checkpoint shards: 100%|██████████| 2/2 [00:00<00:00,  2.27it/s]Loading checkpoint shards: 100%|██████████| 2/2 [00:00<00:00,  2.11it/s]
+Loading ViT engine: ./gr00t_trt_deployment/engines/vit.engine
+============= TRT Engine Detail =============
+Engine file: ./gr00t_trt_deployment/engines/vit.engine
+Inputs: 1
+   0. pixel_values: 512x1536 [torch.float32]
+Outputs: 2
+   0. image_embeds: 128x2048 [torch.float32]
+   1. deepstack_features: 3x128x2048 [torch.float32]
+=============================================
+  Deleted PyTorch ViT (replaced by TRT engine)
+Loading LLM engine: ./gr00t_trt_deployment/engines/llm_bf16.engine
+============= TRT Engine Detail =============
+Engine file: ./gr00t_trt_deployment/engines/llm_bf16.engine
+Inputs: 7
+   0. inputs_embeds: 1x-1x2048 [torch.bfloat16]
+   1. attention_mask: 1x-1 [torch.int64]
+   2. position_ids: 3x1x-1 [torch.int64]
+   3. visual_pos_masks: 1x-1 [torch.bool]
+   4. deepstack_0: 128x2048 [torch.bfloat16]
+   5. deepstack_1: 128x2048 [torch.bfloat16]
+   6. deepstack_2: 128x2048 [torch.bfloat16]
+Outputs: 1
+   0. embeddings: 1x-1x2048 [torch.bfloat16]
+=============================================
+  Deleted PyTorch LLM layers (replaced by TRT engine)
+Loading VL Self-Attention engine: ./gr00t_trt_deployment/engines/vl_self_attention.engine
+============= TRT Engine Detail =============
+Engine file: ./gr00t_trt_deployment/engines/vl_self_attention.engine
+Inputs: 1
+   0. hidden_states: 1x-1x2048 [torch.bfloat16]
+Outputs: 1
+   0. output: 1x-1x2048 [torch.bfloat16]
+=============================================
+  Deleted PyTorch vl_self_attention (replaced by TRT engine)
+Loading action head engines from: ./gr00t_trt_deployment/engines
+============= TRT Engine Detail =============
+Engine file: ./gr00t_trt_deployment/engines/state_encoder.engine
+Inputs: 2
+   0. state: 1x1x132 [torch.bfloat16]
+   1. embodiment_id: 1 [torch.int64]
+Outputs: 1
+   0. output: 1x1x1536 [torch.bfloat16]
+=============================================
+============= TRT Engine Detail =============
+Engine file: ./gr00t_trt_deployment/engines/action_encoder.engine
+Inputs: 3
+   0. actions: 1x40x132 [torch.bfloat16]
+   1. timesteps: 1 [torch.int64]
+   2. embodiment_id: 1 [torch.int64]
+Outputs: 1
+   0. output: 1x40x1536 [torch.bfloat16]
+=============================================
+============= TRT Engine Detail =============
+Engine file: ./gr00t_trt_deployment/engines/dit_bf16.engine
+Inputs: 5
+   0. sa_embs: 1x41x1536 [torch.bfloat16]
+   1. vl_embs: 1x-1x2048 [torch.bfloat16]
+   2. timestep: 1 [torch.int64]
+   3. image_mask: 1x-1 [torch.bool]
+   4. backbone_attention_mask: 1x-1 [torch.bool]
+Outputs: 1
+   0. output: 1x41x1024 [torch.bfloat16]
+=============================================
+============= TRT Engine Detail =============
+Engine file: ./gr00t_trt_deployment/engines/action_decoder.engine
+Inputs: 2
+   0. model_output: 1x41x1024 [torch.bfloat16]
+   1. embodiment_id: 1 [torch.int64]
+Outputs: 1
+   0. output: 1x41x132 [torch.bfloat16]
+=============================================
+N1.7 full-pipeline TRT engines loaded.
+  ViT: TRT | LLM: TRT | Action Head: TRT
+  E2E:             58 ms (17.3 Hz)
+  Data Processing: 3 ms
+  Backbone:        21 ms
+  Action Head:     33 ms
+
+====================================================================================================
+MARKDOWN TABLE (copy/paste into README)
+====================================================================================================
+
+GR00T N1.7 Inference Timing (4 denoising steps):
+
+### Component-wise Breakdown
+
+| Device | Mode | Data Processing | Backbone | Action Head | E2E | Frequency |
+|--------|------|-----------------|----------|-------------|-----|-----------|
+| A100 | PyTorch Eager | 3 ms | 51 ms | 92 ms | 146 ms | 6.8 Hz |
+| A100 | TensorRT (n17_full_pipeline) | 3 ms | 21 ms | 33 ms | 58 ms | 17.3 Hz |
+
+### Speedup vs PyTorch Eager
+
+| Device | Mode | E2E Speedup | Action Head Speedup |
+|--------|------|-------------|---------------------|
+| A100 | PyTorch Eager | 1.00x | 1.00x |
+| A100 | TensorRT (n17_full_pipeline) | 2.53x | 2.75x |
+
+====================================================================================================
+
+====================================================================================================
+DETAILED SUMMARY
+====================================================================================================
+
+Hardware: NVIDIA A100-SXM4-80GB
+Model: checkpoints/GR00T-N1.7-LIBERO/libero_10
+Action Horizon: 40
+Denoising Steps: 4
+
+PyTorch Eager:
+  E2E:             median=146.1 ms, mean=146.9 ± 1.9 ms, min=144.7, max=150.1 (6.8 Hz)
+  Data Processing: 3.38 ms (median)
+  Backbone:        51.31 ms (median)
+  Action Head:     91.54 ms (median)
+
+TensorRT (n17_full_pipeline):
+  E2E:             median=57.7 ms, mean=57.8 ± 0.6 ms, min=57.3, max=59.8 (17.3 Hz)
+  Data Processing: 3.38 ms (median)
+  Backbone:        21.02 ms (median)
+  Action Head:     33.28 ms (median)
+
+====================================================================================================
+
+=== vit.engine: 30 runs, 11.626 ms per run (profiler on) ===
+  gemm                   9.834 ms   84.6%
+  fused elementwise      1.792 ms   15.4%
+  data movement          0.000 ms    0.0%
+  cast                   0.000 ms    0.0%
+  slowest layers:
+      2.862 ms  [gemm]  Reformatting CopyNode for Input Tensor 0 to /patch_embed/proj/Conv
+      0.135 ms  [gemm]  /patch_embed/proj/Conv
+      0.076 ms  [gemm]  /blocks.12/mlp/linear_fc2/Gemm_myl5_194
+      0.076 ms  [gemm]  /blocks.14/mlp/linear_fc2/Gemm_myl5_224
+      0.076 ms  [gemm]  /blocks.1/mlp/linear_fc2/Gemm_myl5_29
+      0.076 ms  [gemm]  /blocks.0/mlp/linear_fc2/Gemm_myl5_14
+      0.075 ms  [gemm]  /blocks.10/mlp/linear_fc2/Gemm_myl5_164
+      0.075 ms  [gemm]  /blocks.3/mlp/linear_fc2/Gemm_myl5_59
+      0.075 ms  [gemm]  /blocks.2/mlp/linear_fc2/Gemm_myl5_44
+      0.075 ms  [gemm]  /blocks.9/mlp/linear_fc2/Gemm_myl5_149
+
+=== llm_bf16.engine: 30 runs, 5.891 ms per run (profiler on) ===
+  gemm                   2.343 ms   39.8%
+  other                  2.088 ms   35.4%
+  cast                   0.759 ms   12.9%
+  fused elementwise      0.334 ms    5.7%
+  attention              0.328 ms    5.6%
+  data movement          0.039 ms    0.7%
+  slowest layers:
+      1.684 ms  [other]  /NonZero_2
+      0.338 ms  [other]  [trainStation1]
+      0.055 ms  [gemm]  /layers.3/mlp/up_proj/MatMul+/layers.3/mlp/gate_proj/MatMul_myl9_61
+      0.055 ms  [gemm]  /layers.8/mlp/up_proj/MatMul+/layers.8/mlp/gate_proj/MatMul_myl9_126
+      0.054 ms  [gemm]  /layers.0/mlp/up_proj/MatMul+/layers.0/mlp/gate_proj/MatMul_myl9_15
+      0.054 ms  [gemm]  /layers.4/mlp/up_proj/MatMul+/layers.4/mlp/gate_proj/MatMul_myl9_74
+      0.054 ms  [gemm]  /layers.9/mlp/up_proj/MatMul+/layers.9/mlp/gate_proj/MatMul_myl9_139
+      0.054 ms  [gemm]  /layers.15/mlp/up_proj/MatMul+/layers.15/mlp/gate_proj/MatMul_myl9_217
+      0.053 ms  [gemm]  /layers.1/mlp/up_proj/MatMul+/layers.1/mlp/gate_proj/MatMul_myl9_31
+      0.053 ms  [gemm]  /layers.13/mlp/up_proj/MatMul+/layers.13/mlp/gate_proj/MatMul_myl9_191
+
+=== vl_self_attention.engine: 30 runs, 1.166 ms per run (profiler on) ===
+  fused elementwise      0.552 ms   47.3%
+  gemm                   0.442 ms   37.9%
+  cast                   0.124 ms   10.6%
+  attention              0.049 ms    4.2%
+  slowest layers:
+      0.338 ms  [fused elementwise]  __mye27166_myl0_3
+      0.052 ms  [gemm]  /transformer_blocks.0/ff/net.2/MatMul_myl0_11
+      0.051 ms  [gemm]  /transformer_blocks.2/ff/net.2/MatMul_myl0_33
+      0.051 ms  [gemm]  /transformer_blocks.3/ff/net.2/MatMul_myl0_44
+      0.051 ms  [gemm]  /transformer_blocks.1/ff/net.2/MatMul_myl0_22
+      0.048 ms  [fused elementwise]  __myl_FcMulMulMulAddMulTanhAddMulMul_myl0_10
+      0.045 ms  [fused elementwise]  __myl_FcMulMulMulAddMulTanhAddMulMul_myl0_32
+      0.044 ms  [fused elementwise]  __myl_FcMulMulMulAddMulTanhAddMulMul_myl0_21
+      0.044 ms  [fused elementwise]  __myl_FcMulMulMulAddMulTanhAddMulMul_myl0_43
+      0.041 ms  [gemm]  /transformer_blocks.0/attn1/to_v/MatMul+/transformer_blocks.0/attn1/to_k/MatMul+/transformer_blocks.
+
+=== state_encoder.engine: 30 runs, 0.043 ms per run (profiler on) ===
+  fused elementwise      0.018 ms   41.0%
+  cast                   0.015 ms   33.9%
+  gemm                   0.011 ms   25.1%
+  slowest layers:
+      0.015 ms  [cast]  __myl_CastGathReshGathGath_myl0_0
+      0.011 ms  [fused elementwise]  __myl_FcAdd_myl0_3
+      0.011 ms  [gemm]  /layer1/MatMul_myl0_1
+      0.007 ms  [fused elementwise]  __myl_GathReshAddRelu_myl0_2
+
+=== action_encoder.engine: 120 runs, 0.092 ms per run (profiler on) ===
+  cast                   0.043 ms   46.8%
+  fused elementwise      0.037 ms   40.6%
+  gemm                   0.012 ms   12.6%
+  slowest layers:
+      0.036 ms  [cast]  __myl_CastGathReshGathGathReshGathGath_myl0_0
+      0.017 ms  [fused elementwise]  __myl_FcAdd_myl0_3
+      0.013 ms  [fused elementwise]  __myl_FcAdd_myl0_5
+      0.012 ms  [gemm]  /W1/MatMul_myl0_1
+      0.007 ms  [cast]  __myl_ReshCastReplReshGathReshAddMulCosSinConcCastConc_myl0_2
+      0.006 ms  [fused elementwise]  __myl_Silu_myl0_4
+
+=== dit_bf16.engine: 120 runs, 4.625 ms per run (profiler on) ===
+  gemm                   1.921 ms   41.5%
+  fused elementwise      1.558 ms   33.7%
+  cast                   1.014 ms   21.9%
+  attention              0.132 ms    2.8%
+  slowest layers:
+      0.186 ms  [fused elementwise]  __mye157700+__mye157688+__mye157752+__mye157740+__mye157804+__mye157792+__mye157856+__mye157844+__my
+      0.153 ms  [gemm]  /dit/transformer_blocks.30/attn1/to_v/MatMul+/dit/transformer_blocks.30/attn1/to_k/MatMul+/dit/trans
+      0.040 ms  [fused elementwise]  __myl_FcMulMulMulAddMulTanhAddMulMul_myl0_22
+      0.028 ms  [gemm]  /dit/transformer_blocks.0/ff/net.2/MatMul_myl0_23
+      0.027 ms  [gemm]  /dit/transformer_blocks.30/ff/net.2/MatMul_myl0_366
+      0.027 ms  [gemm]  /dit/transformer_blocks.4/ff/net.2/MatMul_myl0_69
+      0.027 ms  [gemm]  /dit/transformer_blocks.8/ff/net.2/MatMul_myl0_115
+      0.027 ms  [gemm]  /dit/transformer_blocks.12/ff/net.2/MatMul_myl0_161
+      0.027 ms  [gemm]  /dit/transformer_blocks.6/ff/net.2/MatMul_myl0_92
+      0.027 ms  [gemm]  /dit/transformer_blocks.16/ff/net.2/MatMul_myl0_207
+
+=== action_decoder.engine: 120 runs, 0.046 ms per run (profiler on) ===
+  fused elementwise      0.018 ms   38.4%
+  gemm                   0.016 ms   35.2%
+  cast                   0.012 ms   26.3%
+  slowest layers:
+      0.016 ms  [gemm]  /layer2/MatMul_myl0_2
+      0.012 ms  [cast]  __myl_CastGathGathReshGath_myl0_0
+      0.011 ms  [fused elementwise]  __myl_FcAddRelu_myl0_1
+      0.006 ms  [fused elementwise]  __myl_GathReshAdd_myl0_3
