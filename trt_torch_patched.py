@@ -62,10 +62,12 @@ def layer_category(name):
     if "cast" in n:
         return "cast"
     if any(k in n for k in ("reformat", "copy", "shuffle", "transpose", "concat", "slice",
-                            "gather", "scatter", "reshape")):
+                            "gather", "scatter", "reshape", "nonzero")):
         return "data movement"
     if "myl" in n:
         return "fused elementwise"
+    if any(k in n for k in ("quantize", "dequant", "qdq", "fp4", "fp8")):
+        return "quantize"
     return "other"
 
 
