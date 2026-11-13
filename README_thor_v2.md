@@ -236,3 +236,20 @@ $HF auth logout; git credential-cache exit       # shared machine: drop tokens
 - [ ] BF16: build_bf16.log, bench_bf16.log, power_bf16.log, layerprof_bf16.log
 - [ ] trt_torch.py restored, power mode restored, tokens logged out
 - [ ] pushed / mailed
+
+
+
+
+
+
+
+cd $D/Isaac-GR00T
+sudo docker run -it --rm --runtime nvidia --gpus all \
+  --ipc=host --ulimit memlock=-1 --ulimit stack=67108864 --network host \
+  -v "$D/Isaac-GR00T":/workspace/repo \
+  -v "$D/thor_results":/workspace/results \
+  -v "$D/thor_friday":/workspace/thor_friday \
+  -v "$D/hf_cache":/root/.cache/huggingface \
+  -w /workspace/repo -e PYTHONPATH=/workspace/repo \
+  -e PATH=/root/.local/bin:/opt/gr00t-venv/bin:/usr/local/cuda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+  gr00t-thor bash
