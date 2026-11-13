@@ -71,10 +71,19 @@ Login (HF token: huggingface.co -> Settings -> Access Tokens -> Read. License of
 $HF auth login --force          # paste token, answer n to git credential
 $HF auth whoami
 ```
-Downloads (~7 GB):
+Downloads (~7 GB). List the files explicitly: `--include "libero_10/*"` pulls ~27 GB of training leftovers.
 ```
 cd $D/Isaac-GR00T && pwd        # /home/cfang/Workspace/degaulle/Isaac-GR00T
-$HF download nvidia/GR00T-N1.7-LIBERO --include "libero_10/*" --local-dir checkpoints/GR00T-N1.7-LIBERO
+$HF download nvidia/GR00T-N1.7-LIBERO \
+  libero_10/config.json libero_10/embodiment_id.json \
+  libero_10/model-00001-of-00002.safetensors \
+  libero_10/model-00002-of-00002.safetensors \
+  libero_10/model.safetensors.index.json \
+  libero_10/processor_config.json libero_10/statistics.json \
+  libero_10/experiment_cfg/conf.yaml \
+  libero_10/experiment_cfg/config.yaml \
+  libero_10/experiment_cfg/dataset_statistics.json \
+  --local-dir checkpoints/GR00T-N1.7-LIBERO
 $HF download --repo-type dataset IPEC-COMMUNITY/libero_10_no_noops_1.0.0_lerobot --local-dir examples/LIBERO/libero_10_no_noops_1.0.0_lerobot/
 cp examples/LIBERO/modality.json examples/LIBERO/libero_10_no_noops_1.0.0_lerobot/meta/
 ls checkpoints/GR00T-N1.7-LIBERO/libero_10
@@ -213,6 +222,7 @@ $HF auth logout; git credential-cache exit       # shared machine: drop tokens
 | `could not determine home directory` | `export HOME=/home/cfang` (no `$` before HOME) |
 | path with a folder named `~` | D set with literal ~ -> paste section 0 again (full paths) |
 | python errors pointing to an old hfenv | close terminal, open a new one, paste section 0, activate nothing |
+| checkpoint download shows ~27 GB | Ctrl-C; use the explicit file list (section 4); remove extras like optimizer.pt / rng_state* / scheduler.pt by exact name |
 | torchcodec wheel = "ASCII text" | `git lfs pull` |
 | build fails on Cosmos-Reason2 | accept license on HF, `$HF auth login` |
 | empty /workspace/... in container | `$D` not set in the terminal that ran docker run |
